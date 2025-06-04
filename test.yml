@@ -1,0 +1,40 @@
+image: jfrog.cps.nswc.navy.mil/docker-remote/python:3.11
+
+variables:
+  JFROG_CLI_CERTIFICATE_CHECK: "false"
+
+before_script:
+  
+    - echo "$INTERNAL_CA_CERT" > /usr/local/share/ca-certificates/internal.crt
+    - update-ca-certificates
+    
+    # Make your jf CLI executable available
+    - chmod +x tools/jf
+    - export PATH="$CI_PROJECT_DIR/tools:$PATH"
+    # Test jf CLI version
+    - jf --version
+    # Run your jf config add command with your environment variables
+    - jf config add my-server --url=$JFROG_PLATFORM_URL --user=$CPS_ARTIFACTORY_USER --password=$JCPS_ARTIFACTORY_TOKEN
+    # Upload artifact
+    - mkdir -p build && echo "artifact" > build/file.txt
+    - jf rt upload "build/*" generic-local/ --build-name=example-build --build-number=$CI_PIPELINE_ID
+
+stages:
+  - build
+  - sbom
+
+build_project:
+  stage: build
+  script:
+    - echo "Building fake artifact..."
+    - mkdir -p build && echo "artifact" > build/file.txt
+    - jf rt upload "build/*" generic-local/ --build-name=example-build --build-number=$CI_PIPELINE_ID
+    - jf rt bce example-build $CI_PIPELINE_ID
+    - jf rt bag example-build $CI_PIPELINE_ID
+    - jf rt bp example-build $CI_PIPELINE_ID
+
+generate_sbom:
+  stage: sbom
+  script:
+    - jf sbom generate --build-name=example-build --build-number=$CI_PIPELINE_ID --format=cyclonedx-json --output=sbom.json
+    - cat sbom.json
