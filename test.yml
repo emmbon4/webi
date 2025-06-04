@@ -1,12 +1,11 @@
-image: jfrog.cps.nswc.navy.mil/docker-remote/python:3.11
+image:trial5giw2x.jfrog.io/artifactory/test-docker/mote/python:3.11
 
 variables:
   JFROG_CLI_CERTIFICATE_CHECK: "false"
 
 before_script:
   
-    - echo "$INTERNAL_CA_CERT" > /usr/local/share/ca-certificates/internal.crt
-    - update-ca-certificates
+
     
     # Make your jf CLI executable available
     - chmod +x tools/jf
